@@ -1,0 +1,46 @@
+type SessionConfig = struct {
+  gas_to_delete_session: u64,
+  minimum_session_duration_ms: u64,
+  ms_per_block: u64,
+};
+
+type SignatureData = struct {
+  key: actor_id,
+  duration: u64,
+  allowed_actions: vec ActionsForSession,
+};
+
+/// Defines the set of actions that may be delegated via a session.
+type ActionsForSession = enum {
+  IncreaseCounter,
+};
+
+type SessionData = struct {
+  key: actor_id,
+  expires: u64,
+  allowed_actions: vec ActionsForSession,
+  expires_at_block: u32,
+};
+
+constructor {
+  New : (session_config: SessionConfig);
+};
+
+service SignlessGasless {
+  /// Increments a counter, with optional session-based delegation
+  IncreaseCounterWithPossibilityOfSessions : (session_for_account: opt actor_id) -> str;
+};
+
+service Session {
+  CreateSession : (signature_data: SignatureData, signature: opt vec u8) -> null;
+  DeleteSessionFromAccount : () -> null;
+  DeleteSessionFromProgram : (session_for_account: actor_id) -> null;
+  query SessionForTheAccount : (account: actor_id) -> opt SessionData;
+  query Sessions : () -> vec struct { actor_id, SessionData };
+
+  events {
+    SessionCreated;
+    SessionDeleted;
+  }
+};
+

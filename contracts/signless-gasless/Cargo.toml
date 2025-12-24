@@ -1,0 +1,40 @@
+[package]
+name = "signless-gasless"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+sails-rs = "0.10.1"
+signless-gasless-app = { version = "0.1.0", path = "app" }
+
+[build-dependencies]
+sails-rs = { version = "0.10.1", features = ["build"] }
+signless-gasless-app = { version = "0.1.0", path = "app" }
+
+[dev-dependencies]
+sails-rs = { version = "0.10.1", features = ["gtest", "gclient"] }
+signless-gasless-app = { path = "app" }
+signless-gasless-client = { path = "client" }
+tokio = { version = "1.48.0", features = ["rt", "macros"] }
+rand_core = "0.6.4"
+schnorrkel = { version = "0.10", default-features = false, features = ["u64_backend", "getrandom"] }
+
+[workspace]
+resolver = "3"
+members = ["app", "client"]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Gear Technologies"]
+edition = "2024"
+rust-version = "1.91"
+license = "MIT"
+keywords = ["gear", "sails", "smart-contracts", "wasm", "no-std"]
+categories = ["cryptography::cryptocurrencies", "no-std", "wasm"]
+
+[workspace.dependencies]

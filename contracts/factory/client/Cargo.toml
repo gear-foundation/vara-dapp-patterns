@@ -1,0 +1,17 @@
+[package]
+name = "factory-client"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+sails-rs = "0.10.1"
+
+[build-dependencies]
+factory-app = { version = "0.1.0", path = "../app" }
+sails-rs = { version = "0.10.1", features = ["build"] }

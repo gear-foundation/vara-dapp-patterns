@@ -1,0 +1,14 @@
+constructor {
+  New : (code_id: code_id);
+};
+
+service Factory {
+  CreateProgram : () -> actor_id;
+
+  events {
+    /// Emitted when a new child program instance is successfully created.
+    /// Contains the newly created program's ActorId (address).
+    ProgramCreated: actor_id;
+  }
+};
+

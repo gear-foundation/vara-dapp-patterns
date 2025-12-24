@@ -1,0 +1,13 @@
+[package]
+name = "signless-gasless-app"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+sails-rs = "0.10.1"
+session-service = { git = "https://github.com/gear-foundation/signless-gasless-session-service.git" }
