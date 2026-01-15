@@ -177,13 +177,13 @@ If you encounter errors during development or test execution and need more detai
 In `Cargo.toml`, replace:
 
 ```toml
-sails-rs = "0.10.1"
+sails-rs = "0.10.2"
 ```
 
 with:
 
 ```toml
-sails-rs = { version = "0.10.1", features = ["debug"] }
+sails-rs = { version = "0.10.2", features = ["debug"] }
 ```
 
 ### Log underlying errors during mapping

@@ -1,0 +1,23 @@
+constructor {
+  New : ();
+};
+
+service AdminOracle {
+  /// Override the base `update_price` method and enforce admin access.
+  UpdatePrice : (value: u128) -> null;
+  /// Reads the latest stored price.
+  query GetPrice : () -> u128;
+};
+
+service Market {
+  /// A command that uses the admin_oracle price and applies a slippage guard.
+  /// 
+  /// In real protocols, similar checks protect users from stale/attacked admin_oracle prices.
+  OpenPosition : (amount_tokens: u128, max_acceptable_price: u128) -> u128;
+  /// Query the last stored quote (shows that Market has its own state).
+  query LastQuote : () -> struct { u128, actor_id };
+  /// Pure quote based on the admin_oracle price.
+  /// This is a typical “read path” that depends on admin_oracle but does not mutate admin_oracle state.
+  query QuoteUsd : (amount_tokens: u128) -> u128;
+};
+

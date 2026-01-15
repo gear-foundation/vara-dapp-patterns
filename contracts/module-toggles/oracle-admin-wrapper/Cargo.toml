@@ -1,28 +1,27 @@
 [package]
-name = "signless-gasless"
+name = "oracle-admin-wrapper"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 license.workspace = true
 keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
+oracle-admin-wrapper-app = { version = "0.1.0", path = "app" }
 sails-rs = "0.10.2"
-signless-gasless-app = { version = "0.1.0", path = "app" }
 
 [build-dependencies]
+oracle-admin-wrapper-app = { version = "0.1.0", path = "app" }
 sails-rs = { version = "0.10.2", features = ["build"] }
-signless-gasless-app = { version = "0.1.0", path = "app" }
 
 [dev-dependencies]
+oracle-admin-wrapper-app = { path = "app" }
+oracle-admin-wrapper-client = { path = "client" }
 sails-rs = { version = "0.10.2", features = ["gtest", "gclient"] }
-signless-gasless-app = { path = "app" }
-signless-gasless-client = { path = "client" }
 tokio = { version = "1.48.0", features = ["rt", "macros"] }
-rand_core = "0.6.4"
-schnorrkel = { version = "0.10", default-features = false, features = ["u64_backend", "getrandom"] }
 
 [workspace]
 resolver = "3"
@@ -33,6 +32,7 @@ version = "0.1.0"
 authors = ["Gear Foundation"]
 edition = "2024"
 rust-version = "1.91"
+repository = "https://github.com/gear-tech/oracle-admin-wrapper"
 license = "MIT"
 keywords = ["gear", "sails", "smart-contracts", "wasm", "no-std"]
 categories = ["cryptography::cryptocurrencies", "no-std", "wasm"]

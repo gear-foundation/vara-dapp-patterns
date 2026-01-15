@@ -10,5 +10,5 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-sails-rs = "0.10.1"
+sails-rs = "0.10.2"
 gstd = "1.10.0"

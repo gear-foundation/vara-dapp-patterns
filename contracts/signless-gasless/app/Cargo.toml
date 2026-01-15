@@ -9,5 +9,5 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-sails-rs = "0.10.1"
+sails-rs = "0.10.2"
 session-service = { git = "https://github.com/gear-foundation/signless-gasless-session-service.git" }

@@ -11,16 +11,16 @@ categories.workspace = true
 
 [dependencies]
 factory-app = { version = "0.1.0", path = "app" }
-sails-rs = "0.10.1"
+sails-rs = "0.10.2"
 
 [build-dependencies]
 factory-app = { version = "0.1.0", path = "app" }
-sails-rs = { version = "0.10.1", features = ["build"] }
+sails-rs = { version = "0.10.2", features = ["build"] }
 
 [dev-dependencies]
 factory-app = { path = "app" }
 factory-client = { path = "client" }
-sails-rs = { version = "0.10.1", features = ["gtest", "gclient"] }
+sails-rs = { version = "0.10.2", features = ["gtest", "gclient"] }
 tokio = { version = "1.48.0", features = ["rt", "macros"] }
 factory-child = { path = "../factory-child"}
 
@@ -30,7 +30,7 @@ members = ["app", "client"]
 
 [workspace.package]
 version = "0.1.0"
-authors = ["Gear Technologies"]
+authors = ["Gear Foundation"]
 edition = "2024"
 rust-version = "1.91"
 repository = "https://github.com/gear-tech/factory"

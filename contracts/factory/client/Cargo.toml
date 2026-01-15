@@ -10,8 +10,8 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-sails-rs = "0.10.1"
+sails-rs = "0.10.2"
 
 [build-dependencies]
 factory-app = { version = "0.1.0", path = "../app" }
-sails-rs = { version = "0.10.1", features = ["build"] }
+sails-rs = { version = "0.10.2", features = ["build"] }

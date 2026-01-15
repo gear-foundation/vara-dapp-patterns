@@ -1837,48 +1837,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "factory"
-version = "0.1.0"
-dependencies = [
- "factory-app",
- "factory-child",
- "factory-client",
- "sails-rs",
- "tokio",
-]
-
-[[package]]
-name = "factory-app"
-version = "0.1.0"
-dependencies = [
- "gstd",
- "sails-rs",
-]
-
-[[package]]
-name = "factory-child"
-version = "0.1.0"
-dependencies = [
- "factory-child-app",
- "sails-rs",
-]
-
-[[package]]
-name = "factory-child-app"
-version = "0.1.0"
-dependencies = [
- "sails-rs",
-]
-
-[[package]]
-name = "factory-client"
-version = "0.1.0"
-dependencies = [
- "factory-app",
- "sails-rs",
-]
-
-[[package]]
 name = "fail"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4476,6 +4434,39 @@ name = "openssl-probe"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f50d9b3dabb09ecd771ad0aa242ca6894994c130308ca3d7684634df8037391"
+
+[[package]]
+name = "oracle"
+version = "0.1.0"
+dependencies = [
+ "sails-rs",
+]
+
+[[package]]
+name = "oracle-admin-wrapper"
+version = "0.1.0"
+dependencies = [
+ "oracle-admin-wrapper-app",
+ "oracle-admin-wrapper-client",
+ "sails-rs",
+ "tokio",
+]
+
+[[package]]
+name = "oracle-admin-wrapper-app"
+version = "0.1.0"
+dependencies = [
+ "oracle",
+ "sails-rs",
+]
+
+[[package]]
+name = "oracle-admin-wrapper-client"
+version = "0.1.0"
+dependencies = [
+ "oracle-admin-wrapper-app",
+ "sails-rs",
+]
 
 [[package]]
 name = "ordered-float"

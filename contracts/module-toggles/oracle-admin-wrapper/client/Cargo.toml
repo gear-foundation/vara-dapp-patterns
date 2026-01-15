@@ -1,5 +1,5 @@
 [package]
-name = "factory-child-app"
+name = "oracle-admin-wrapper-client"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -11,3 +11,7 @@ categories.workspace = true
 
 [dependencies]
 sails-rs = "0.10.2"
+
+[build-dependencies]
+oracle-admin-wrapper-app = { version = "0.1.0", path = "../app" }
+sails-rs = { version = "0.10.2", features = ["build"] }

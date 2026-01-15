@@ -99,13 +99,13 @@ If you encounter test failures while developing your application and need more d
 In `Cargo.toml`, replace:
 
 ```toml
-sails-rs = "0.10.1"
+sails-rs = "0.10.2"
 ```
 
 with:
 
 ```toml
-sails-rs = { version = "0.10.1", features = ["debug"] }
+sails-rs = { version = "0.10.2", features = ["debug"] }
 ```
 
 Then, instead of discarding the underlying error value `e`, log it with `sails_rs::gstd::debug!()` while keeping your typed error mapping:
