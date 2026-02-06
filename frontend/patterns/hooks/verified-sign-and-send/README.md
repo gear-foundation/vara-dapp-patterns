@@ -62,6 +62,20 @@ useVerifiedSignAndSend({
 })
 ```
 
+## Input
+
+This hook expects a **prepared extrinsic** (`SubmittableExtrinsic`).
+
+Transaction building and argument mapping should happen in a separate pattern
+(e.g. using `usePrepareProgramTransaction` or a custom builder hook).
+
+## Output
+
+The mutation resolves only after:
+- runtime success (no `ExtrinsicFailed`)
+- and program-level success (no error replies for queued messages)
+
+
 ## Parameters
 
 - **`programs`**  

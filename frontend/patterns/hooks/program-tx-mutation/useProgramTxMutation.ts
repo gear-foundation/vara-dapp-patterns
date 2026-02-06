@@ -1,76 +1,37 @@
-import { useAccount, usePrepareProgramTransaction } from '@gear-js/react-hooks';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, type UseMutationOptions } from '@tanstack/react-query';
 
-import type {
-  ProgramTxMutationOptions,
-  SignAndSendableTransaction,
-  TxMode,
-} from './types';
-
-type PrepareTransactionAsyncResult = {
-  transaction: SignAndSendableTransaction;
+export type SignAndSendableTransaction<TResult = unknown> = {
+  signAndSend: () => Promise<TResult>;
 };
 
+export type ProgramTxMutationOptions<TResult> = UseMutationOptions<
+  TResult,
+  Error,
+  SignAndSendableTransaction<TResult>
+>;
+
 /**
- * Base pattern: "Program Tx Mutation"
+ * useProgramTxMutation
  *
- * This hook standardizes how frontend applications prepare and execute
- * Vara program transactions by combining:
- * - `usePrepareProgramTransaction` (Gear JS)
- * - `useMutation` (React Query)
+ * Executes a previously prepared transaction using React Query.
  *
- * It supports two execution modes:
- * - `prepare`: prepares and returns the transaction without executing it
- * - `signAndSend`: prepares, signs, and sends the transaction inside the hook
+ * Input:  a SignAndSendableTransaction
+ * Output: the result of transaction.signAndSend()
+ *
+ * This hook owns execution state (pending/success/error),
+ * but intentionally does not prepare or verify transactions.
  */
-export function useProgramTxMutation<TParams, TResult = unknown>(
-  options: ProgramTxMutationOptions<TParams, TResult>,
+export function useProgramTxMutation<TResult = unknown>(
+  mutationOptions?: ProgramTxMutationOptions<TResult>,
 ) {
-  const {
-    program,
-    serviceName,
-    functionName,
-    mapArgs,
-    gasLimit,
-    mode = 'prepare' as TxMode,
-    mutationOptions,
-  } = options;
+  return useMutation<TResult, Error, SignAndSendableTransaction<TResult>>({
+    mutationFn: (transaction) => {
+      if (!transaction?.signAndSend) {
+        throw new Error('Invalid transaction object provided');
+      }
 
-  const { account } = useAccount();
-
-  const { prepareTransactionAsync } = usePrepareProgramTransaction({
-    program,
-    serviceName,
-    functionName,
-  });
-
-  const mutationFn = async (params: TParams): Promise<TResult> => {
-    if (!program || !account) {
-      // Explicitly throw to trigger React Query error handling
-      throw new Error('Program or account is not found');
-    }
-
-    const { transaction } = (await prepareTransactionAsync({
-      args: mapArgs(params),
-      ...(gasLimit ? { gasLimit } : {}),
-    })) as PrepareTransactionAsyncResult;
-
-    if (mode === 'signAndSend') {
-      return (await transaction.signAndSend()) as TResult;
-    }
-
-    // mode === 'prepare'
-    return transaction as unknown as TResult;
-  };
-
-  const mutation = useMutation({
-    mutationFn,
+      return transaction.signAndSend();
+    },
     ...mutationOptions,
   });
-
-  return {
-    program,
-    account,
-    ...mutation, // mutate, mutateAsync, isPending, error, data, etc.
-  };
 }

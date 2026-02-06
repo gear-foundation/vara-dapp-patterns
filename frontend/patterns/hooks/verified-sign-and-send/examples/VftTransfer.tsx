@@ -1,13 +1,12 @@
 /**
- * Simple example: VFT transfer
+ * Example: VFT transfer with verified execution
  *
  * Flow:
- * 1) Prepare the program transaction in `prepare` mode (returns an extrinsic)
+ * 1) Prepare an extrinsic for `vft.transfer` (no execution)
  * 2) Execute + verify it with `useVerifiedSignAndSend`
  */
-
 import type { HexString } from '@gear-js/api';
-import { useAlert, useApi, useAccount, useProgram } from '@gear-js/react-hooks';
+import { useAlert, useApi, useAccount, useProgram, usePrepareProgramTransaction } from '@gear-js/react-hooks';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { ISubmittableResult } from '@polkadot/types/types';
 import { useState } from 'react';
@@ -15,7 +14,6 @@ import { useState } from 'react';
 import { Program as VftProgram } from '@/lib/extended-vft';
 import { getErrorMessage } from '@/frontend/shared/errors/getErrorMessage';
 
-import { useProgramTxMutation } from '@/frontend/patterns/hooks/program-tx-mutation/useProgramTxMutation';
 import { useVerifiedSignAndSend } from '@/frontend/patterns/hooks/verified-sign-and-send/useVerifiedSignAndSend';
 
 type Extrinsic = SubmittableExtrinsic<'promise', ISubmittableResult>;
@@ -32,7 +30,7 @@ type Props = {
   to: HexString;
 };
 
-export function VftTransferNoBatchExample({ vftProgramId, from, to }: Props) {
+export function VftTransferExample({ vftProgramId, from, to }: Props) {
   const { api } = useApi();
   const { account } = useAccount();
   const alert = useAlert();
@@ -46,20 +44,17 @@ export function VftTransferNoBatchExample({ vftProgramId, from, to }: Props) {
   });
 
   /**
-   * Builder pattern (prepare-only):
-   * Create the extrinsic for `vft.transfer` without executing it.
+   * Prepare step (builder): creates an extrinsic for `vft.transfer`.
+   * This is intentionally separated from execution & verification.
    */
-  const transfer = useProgramTxMutation<TransferParams, { extrinsic?: Extrinsic }>({
+  const { prepareTransactionAsync } = usePrepareProgramTransaction({
     program,
     serviceName: 'vft',
     functionName: 'transfer',
-    mapArgs: ({ from, to, value }) => [from, to, value],
-    mode: 'prepare',
   });
 
   /**
-   * Executor + verification pattern:
-   * Executes a provided extrinsic and verifies runtime + program replies.
+   * Execute + verify step: runtime + program replies.
    */
   const verifiedSend = useVerifiedSignAndSend({
     programs: program ? [{ programId: vftProgramId, registry: program.registry }] : [],
@@ -74,15 +69,16 @@ export function VftTransferNoBatchExample({ vftProgramId, from, to }: Props) {
     if (!api || !account || !program) return;
 
     try {
-      const tx = await transfer.mutateAsync({ from, to, value });
+      const prepared = (await prepareTransactionAsync({
+        args: [from, to, value] satisfies TransferParams extends any ? unknown[] : unknown[],
+      })) as { extrinsic?: Extrinsic };
 
-      if (!tx?.extrinsic) {
+      if (!prepared?.extrinsic) {
         alert.error('Failed to prepare transfer extrinsic');
         return;
       }
 
-      // execute the prepared extrinsic directly
-      await verifiedSend.mutateAsync({ extrinsic: tx.extrinsic });
+      await verifiedSend.mutateAsync({ extrinsic: prepared.extrinsic });
     } catch (err) {
       alert.error(getErrorMessage(err));
     }
@@ -92,7 +88,6 @@ export function VftTransferNoBatchExample({ vftProgramId, from, to }: Props) {
     !api ||
     !account ||
     !program ||
-    transfer.isPending ||
     verifiedSend.isPending ||
     !value ||
     Number(value) <= 0;
