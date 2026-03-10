@@ -1,0 +1,21 @@
+[package]
+name = "delayed-self-message-client"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+mockall = { version = "0.12", optional = true }
+sails-rs = "0.10.2"
+
+[build-dependencies]
+delayed-self-message-app = { path = "../app" }
+sails-rs = { version = "0.10.2", features = ["build"] }
+
+[features]
+mocks = ["sails-rs/mockall", "dep:mockall"]
