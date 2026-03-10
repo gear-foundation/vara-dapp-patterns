@@ -1,0 +1,39 @@
+type Lock = struct {
+  active: bool,
+  expires_at: u32,
+  version: u64,
+};
+
+constructor {
+  New : ();
+};
+
+service DelayedSelfMessage {
+  Cancel : () -> null;
+  Expire : (user: actor_id, version: u64) -> null;
+  Renew : (delay_blocks: u32) -> null;
+  Start : (delay_blocks: u32) -> null;
+  query GetLock : (user: actor_id) -> opt Lock;
+
+  events {
+    Started: struct {
+      user: actor_id,
+      version: u64,
+      expires_at: u32,
+    };
+    Renewed: struct {
+      user: actor_id,
+      version: u64,
+      expires_at: u32,
+    };
+    Cancelled: struct {
+      user: actor_id,
+      version: u64,
+    };
+    Expired: struct {
+      user: actor_id,
+      version: u64,
+    };
+  }
+};
+
