@@ -1,1 +1,4 @@
 .DS_Store
+infrastructure/gasless-server/dist/
+infrastructure/gasless-server/node_modules/
+infrastructure/gasless-server/package-lock.json
