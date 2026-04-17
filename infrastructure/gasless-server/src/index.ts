@@ -45,7 +45,7 @@ async function main() {
     }
 
     try {
-      const voucherId: HexString = await gaslessService.issue(
+      const voucherId: HexString = await gaslessService.issueIfNeeded(
         account,
         programId,
         amount,

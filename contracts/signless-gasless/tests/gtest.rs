@@ -61,15 +61,16 @@ async fn check_session_works() {
     let session_listener = session_client.listener();
     let mut session_events = session_listener.listen().await.unwrap();
 
-    // Generate an ephemeral keypair to act as the "session key" that will call on behalf of the user.
-    // In this flow, the session key signs a message authorizing a session for a specific account.
+    // Generate an ephemeral keypair used by the signature-based flow.
+    // In this example, the signed payload authorizes the current caller (Alice)
+    // to act for the account stored under `signature_data.key`.
     let pair: Keypair = Keypair::generate_with(OsRng);
 
     // Build the data that must be signed to authorize session creation.
     // NOTE: This structure is part of the session protocol; the message is wrapped in <Bytes>...</Bytes>
     // inside the session service implementation before verification.
     let data_to_sign = SignatureData {
-        key: DEFAULT_USER_ALICE.into(), // account being authorized (original account)
+        key: DEFAULT_USER_ALICE.into(), // caller that will be authorized by the signature
         duration: 180_000,
         allowed_actions: vec![ActionsForSession::IncreaseCounter],
     };
@@ -88,7 +89,7 @@ async fn check_session_works() {
     // Convert the session public key into an ActorId (the on-chain representation).
     let key = ActorId::from(pair.public.to_bytes());
 
-    // The session is created for `key` (session key) and allows `IncreaseCounter`.
+    // The session is stored under `key` and allows `IncreaseCounter`.
     let signature_data = SignatureData {
         key,
         duration: 180_000,
@@ -96,8 +97,8 @@ async fn check_session_works() {
     };
 
     // Create the session using the signature-based flow.
-    // After this, the session key is allowed to call `IncreaseCounter` on behalf of the original account,
-    // until the session expires.
+    // After this, Alice can call the business method with `Some(key)`,
+    // and the resolved account becomes `key`.
     session_client
         .create_session(signature_data, Some(raw_signature.to_vec()))
         .await
@@ -110,14 +111,15 @@ async fn check_session_works() {
     );
 
     // Execute the business call with session delegation enabled:
-    // - The caller is Alice (env default), but we pass `Some(key)` so the contract validates the session
-    //   and resolves the "original address" accordingly.
+    // - The caller is Alice (env default)
+    // - We pass `Some(key)` so the contract loads the session stored under `key`
+    //   and resolves the business address to `key`
     let result = signless_gasless_client
         .increase_counter_with_possibility_of_sessions(Some(key))
         .await
         .unwrap();
 
-    // The response contains the resolved original address and the new counter value.
+    // The response contains the resolved account and the new counter value.
     assert_eq!(result, format!("Original address: {key}; counter: {}!", 1));
 }
 

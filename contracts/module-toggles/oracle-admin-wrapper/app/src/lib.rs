@@ -25,7 +25,7 @@ impl Program {
         }
     }
 
-    // Guarded oracle updates (ваш admin wrapper сервис).
+    // Guarded oracle updates exposed through the admin wrapper service.
     pub fn admin_oracle(&self) -> Service<'_> {
         Service::new(OracleService::new(&self.oracle), self.admin)
     }

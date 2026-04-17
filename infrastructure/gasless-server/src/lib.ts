@@ -12,6 +12,8 @@ const SECONDS_PER_BLOCK = 3;
 /// so we can answer info queries without additional on-chain round-trips.
 const voucherInfoStorage: Record<HexString, VoucherInfo> = {};
 
+type VoucherIssueKey = `${HexString}:${HexString}`;
+
 type VoucherInfo = {
   durationInSec: number;
   amount: number;
@@ -36,6 +38,8 @@ export interface IVoucherDetails {
 export class GaslessService {
   private api: GearApi;
   private readonly voucherAccount: ReturnType<Keyring["addFromSeed"]>;
+  private submissionQueue: Promise<void> = Promise.resolve();
+  private readonly inFlightVoucherIssues = new Map<VoucherIssueKey, Promise<HexString>>();
 
   constructor() {
     this.api = new GearApi({ providerAddress: process.env.NODE_URL });
@@ -51,20 +55,34 @@ export class GaslessService {
     amount: number,
     durationInSec: number
   ): Promise<HexString> {
-    await Promise.all([this.api.isReadyOrError, waitReady()]);
+    const key: VoucherIssueKey = `${account}:${programId}`;
+    const inFlight = this.inFlightVoucherIssues.get(key);
+    if (inFlight) return inFlight;
 
-    // Check whether this account already has a voucher scoped to programId.
-    const all = await this.api.voucher.getAllForAccount(account);
-    const existing = Object.entries(all).find(
-      ([, v]) => Array.isArray(v.programs) && v.programs.includes(programId)
-    );
+    const request = this.enqueueIssuerOperation(async () => {
+      await Promise.all([this.api.isReadyOrError, waitReady()]);
 
-    if (existing) {
-      console.log("⚠️ Voucher already exists:", existing[0]);
-      return existing[0] as HexString;
+      // Check whether this account already has a voucher scoped to programId.
+      const all = await this.api.voucher.getAllForAccount(account);
+      const existing = Object.entries(all).find(
+        ([, v]) => Array.isArray(v.programs) && v.programs.includes(programId)
+      );
+
+      if (existing) {
+        console.log("⚠️ Voucher already exists:", existing[0]);
+        return existing[0] as HexString;
+      }
+
+      return this.issueInternal(account, programId, amount, durationInSec);
+    });
+
+    this.inFlightVoucherIssues.set(key, request);
+
+    try {
+      return await request;
+    } finally {
+      this.inFlightVoucherIssues.delete(key);
     }
-
-    return this.issue(account, programId, amount, durationInSec);
   }
 
   /// Return full voucher details (id, enabled, varaToIssue, duration) for the
@@ -159,6 +177,17 @@ export class GaslessService {
     amount: number,
     durationInSec: number
   ): Promise<HexString> {
+    return this.enqueueIssuerOperation(() =>
+      this.issueInternal(spender, programId, amount, durationInSec)
+    );
+  }
+
+  private async issueInternal(
+    spender: HexString,
+    programId: HexString,
+    amount: number,
+    durationInSec: number
+  ): Promise<HexString> {
     await Promise.all([this.api.isReadyOrError, waitReady()]);
 
     const durationInBlocks = Math.round(durationInSec / SECONDS_PER_BLOCK);
@@ -235,64 +264,30 @@ export class GaslessService {
     balance: number,
     prolongDurationInSec: number
   ): Promise<void> {
-    const currentBalance =
-      (await this.api.balance.findOut(voucherId)).toBigInt() / BigInt(1e12);
-    const durationInBlocks = Math.round(prolongDurationInSec / SECONDS_PER_BLOCK);
-    const topUp = BigInt(balance) - currentBalance;
+    await this.enqueueIssuerOperation(async () => {
+      const currentBalance =
+        (await this.api.balance.findOut(voucherId)).toBigInt() / BigInt(1e12);
+      const durationInBlocks = Math.round(prolongDurationInSec / SECONDS_PER_BLOCK);
+      const topUp = BigInt(balance) - currentBalance;
 
-    const params: IUpdateVoucherParams = {};
-    if (prolongDurationInSec > 0) {
-      params.prolongDuration = durationInBlocks;
-    }
-    if (topUp > 0n) {
-      params.balanceTopUp = topUp * BigInt(1e12);
-    }
+      const params: IUpdateVoucherParams = {};
+      if (prolongDurationInSec > 0) {
+        params.prolongDuration = durationInBlocks;
+      }
+      if (topUp > 0n) {
+        params.balanceTopUp = topUp * BigInt(1e12);
+      }
 
-    const tx = this.api.voucher.update(account, voucherId, params);
-
-    await new Promise<void>((resolve, reject) => {
-      tx.signAndSend(this.voucherAccount, ({ events, status }) => {
-        if (!status.isInBlock) return;
-
-        const vuEvent = events.find(
-          ({ event }) => event.method === "VoucherUpdated"
-        );
-        if (vuEvent) return resolve();
-
-        const efEvent = events.find(
-          ({ event }) => event.method === "ExtrinsicFailed"
-        );
-        reject(
-          efEvent
-            ? JSON.stringify(this.api.getExtrinsicFailedError(efEvent.event))
-            : new Error("VoucherUpdated event not found in block")
-        );
-      });
+      const tx = this.api.voucher.update(account, voucherId, params);
+      await this.signQueuedTx(tx, "VoucherUpdated");
     });
   }
 
   /// Revoke a voucher, returning its remaining funds to the issuer account.
   public async revoke(voucherId: HexString, account: string): Promise<void> {
-    const tx = this.api.voucher.revoke(account, voucherId);
-
-    await new Promise<void>((resolve, reject) => {
-      tx.signAndSend(this.voucherAccount, ({ events, status }) => {
-        if (!status.isInBlock) return;
-
-        const vuEvent = events.find(
-          ({ event }) => event.method === "VoucherRevoked"
-        );
-        if (vuEvent) return resolve();
-
-        const efEvent = events.find(
-          ({ event }) => event.method === "ExtrinsicFailed"
-        );
-        reject(
-          efEvent
-            ? JSON.stringify(this.api.getExtrinsicFailedError(efEvent.event))
-            : new Error("VoucherRevoked event not found in block")
-        );
-      });
+    await this.enqueueIssuerOperation(async () => {
+      const tx = this.api.voucher.revoke(account, voucherId);
+      await this.signQueuedTx(tx, "VoucherRevoked");
     });
   }
 
@@ -308,5 +303,43 @@ export class GaslessService {
     if (!seed) throw new Error("Missing VOUCHER_ACCOUNT_SEED_HEX env var");
     const keyring = new Keyring({ type: "sr25519", ss58Format: 137 });
     return keyring.addFromSeed(hexToU8a(seed));
+  }
+
+  private enqueueIssuerOperation<T>(operation: () => Promise<T>): Promise<T> {
+    const run = this.submissionQueue.then(operation);
+    this.submissionQueue = run.then(
+      () => undefined,
+      () => undefined
+    );
+    return run;
+  }
+
+  private async signQueuedTx(
+    tx: any,
+    successEventMethod: string
+  ): Promise<void> {
+    const nonce = await this.api.rpc.system.accountNextIndex(
+      this.voucherAccount.address
+    );
+
+    await new Promise<void>((resolve, reject) => {
+      tx.signAndSend(this.voucherAccount, { nonce }, ({ events, status }: { events: any[]; status: { isInBlock: boolean } }) => {
+        if (!status.isInBlock) return;
+
+        const successEvent = events.find(
+          ({ event }: { event: any }) => event.method === successEventMethod
+        );
+        if (successEvent) return resolve();
+
+        const failedEvent = events.find(
+          ({ event }: { event: any }) => event.method === "ExtrinsicFailed"
+        );
+        reject(
+          failedEvent
+            ? this.api.getExtrinsicFailedError(failedEvent.event)
+            : new Error(`${successEventMethod} event not found in block`)
+        );
+      });
+    });
   }
 }

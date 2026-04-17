@@ -35,7 +35,7 @@ over automatic refetch behavior.
   Data is treated as always fresh until explicitly invalidated.
 
 - **`gcTime: 0`**  
-  Cached data is kept for the lifetime of the app.
+  Once a query has no active observers, React Query may garbage-collect it immediately. This keeps the pattern explicit: active screens hold the cache, and inactive screens should re-read or be invalidated intentionally.
 
 - **`refetchOnWindowFocus: false`**  
   Prevents unexpected refetches when the user switches tabs.

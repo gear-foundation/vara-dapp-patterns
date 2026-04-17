@@ -3,8 +3,6 @@ import {
   useAlert,
   useApi,
   useBalance,
-  useBalanceFormat,
-  withoutCommas,
 } from "@gear-js/react-hooks";
 import { stringShorten } from "@polkadot/util";
 
@@ -41,7 +39,6 @@ function useCheckBalance(args?: Props) {
   const addressToCheck = gaslessVoucherId ?? voucherAddress;
 
   const { balance } = useBalance(addressToCheck);
-  const { getFormattedBalanceValue, getFormattedGasValue } = useBalanceFormat();
 
   /// Check if `addressToCheck` has enough funds to cover the gas for `limit`.
   ///
@@ -56,34 +53,23 @@ function useCheckBalance(args?: Props) {
   /// If sufficient: calls `callback()` immediately.
   /// If insufficient: shows an alert with the shortened address and calls `onError()`.
   const checkBalance = (
-    limit: number,
+    limit: bigint,
     callback: () => void,
     onError?: () => void
   ) => {
-    const chainBalance = Number(
-      getFormattedBalanceValue(
-        Number(withoutCommas(balance?.toString() ?? ""))
-      ).toFixed()
-    );
+    if (!api) {
+      onError?.();
+      return;
+    }
 
-    const valuePerGas = Number(
-      withoutCommas(
-        getFormattedGasValue(api!.valuePerGas.toHuman()).toFixed()
-      )
-    );
-
-    const chainEDeposit = Number(
-      getFormattedBalanceValue(
-        Number(withoutCommas(api?.existentialDeposit.toString() ?? ""))
-      ).toFixed()
-    );
-
-    const gasLimit = Number(getFormattedGasValue(limit).toFixed());
-    const required = chainEDeposit + gasLimit * valuePerGas;
+    const chainBalance = BigInt(balance?.toString() ?? "0");
+    const valuePerGas = BigInt(api.valuePerGas.toString());
+    const chainEDeposit = BigInt(api.existentialDeposit.toString());
+    const required = chainEDeposit + limit * valuePerGas;
 
     if (chainBalance < required) {
       alert.error(
-        `Low balance on ${stringShorten(account?.decodedAddress ?? "", 8)}`
+        `Low balance on ${stringShorten(addressToCheck ?? "", 8)}`
       );
       onError?.();
       return;

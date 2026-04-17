@@ -1,8 +1,9 @@
 use factory_client::factory::events::FactoryEvents;
 use factory_client::{FactoryClient, FactoryClientCtors, factory::*};
 use sails_rs::futures::StreamExt;
+use sails_rs::client::*;
+use sails_rs::gtest::*;
 use sails_rs::gtest::constants::{DEFAULT_USER_ALICE, DEFAULT_USERS_INITIAL_BALANCE, UNITS};
-use sails_rs::{client::*, gtest::*};
 
 #[tokio::test]
 async fn check_factory() {

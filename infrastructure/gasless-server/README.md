@@ -118,6 +118,8 @@ extrinsic.signAndSend(this.voucherAccount, { nonce }, callback);
 
 Without an explicit nonce, the Polkadot API queries the current on-chain nonce before signing. Under concurrent requests, two calls could read the same nonce and produce a collision. Fetching the nonce explicitly and passing it ensures correct sequencing when multiple vouchers are issued in rapid succession.
 
+Important nuance: explicit nonce handling is only part of the solution. If multiple server requests race at the same time, they can still fetch the same next nonce unless you also serialize submissions or introduce a nonce manager/queue on the server side. For a true production deployment, add request serialization per issuer account.
+
 ---
 
 ## REST API reference

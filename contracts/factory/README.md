@@ -4,7 +4,7 @@ This repository contains a minimal **factory smart program** that can **instanti
 
 ## Full code reference
 
-- Factory implementation: [`factory/app/src/lib.rs`](./factory/app/src/lib.rs)
+- Factory implementation: [`app/src/lib.rs`](./app/src/lib.rs)
 
 ## Key fragment explained (create + await reply)
 
@@ -42,6 +42,12 @@ In other words, the Future encapsulates the end-to-end lifecycle of:
 - `payload`  
   Initialization payload for the child program, typically **SCALE-encoded constructor arguments**.  
   This must match the child’s `new(...)` signature; otherwise the child init will fail during `.await`.
+
+  In this example the child constructor has no custom arguments, so the payload is just the encoded Sails constructor route:
+
+  ```rust
+  let payload = "New".encode();
+  ```
 
 - `gas_limit` - **gas for create + init**  
   Gas budget used to create the program and execute the child initialization.
@@ -133,7 +139,8 @@ let (address, _) = create_program_future
 
 ## Notes
 
-- The child program initialization payload must be SCALE-encoded to match the child program’s constructor (new(...)) exactly-both the argument order and the types. Example: if the child constructor is `new(title: String, name: String, cfg: Config)`, then the payload must be built as:
+- The child initialization payload must match the child constructor exactly: route first, then SCALE-encoded arguments in order. For a constructor such as `new(name: String, cfg: Config)`, the payload would be built as:
+
 ```rust
 let payload = ["New".encode(), name.encode(), cfg.encode()].concat();
 ```

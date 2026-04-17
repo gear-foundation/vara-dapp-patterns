@@ -7,7 +7,7 @@ pub enum AdminError {
     Unauthorized,
 }
 
-/// Admin wrapper service that extends `counter_app::OracleService`
+/// Admin wrapper service that extends `oracle::OracleService`
 /// and overrides selected methods to inject access control.
 pub struct Service<'a> {
     pub(crate) oracle: OracleService<'a>,
@@ -27,7 +27,7 @@ impl<'a> Service<'a> {
     }
 }
 
-// Required for `extends = [counter_app::OracleService<'a>]`.
+// Required for `extends = [OracleService<'a>]`.
 // Sails needs a way to convert the extending service into the extended one.
 // `From` automatically provides `Into`.
 impl<'a> From<Service<'a>> for OracleService<'a> {

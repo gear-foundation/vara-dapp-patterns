@@ -48,7 +48,7 @@ It does **not**:
 - Map domain parameters to program arguments
 - Decide gas limits
 
-Those responsibilities belong to **builder patterns** such as `program-tx-mutation`.
+Those responsibilities belong to preparation patterns such as `prepare-program-tx` or your own transaction builder.
 
 ---
 
@@ -83,6 +83,8 @@ The mutation resolves only after:
   Each entry must include:
   - **`programId`**
   - **`registry`** (used to decode reply errors)
+
+  If a program is omitted from this list, runtime-level failures are still caught, but reply payloads for that program cannot be decoded into typed Sails errors.
 
 - **`resolveOn` *(optional)***  
   Controls when the mutation resolves:

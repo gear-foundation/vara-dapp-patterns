@@ -186,6 +186,10 @@ It does not try to solve:
 
 - production-grade scheduler abstractions
 
+- long-term storage cleanup for inactive lock tombstones
+
+In the current implementation, a cancelled or expired lock remains in storage as an inactive record so the pattern can keep its `version` history simple. That is acceptable for a teaching example, but in a long-lived production system you would usually add a cleanup strategy or a more compact tombstone model.
+
 If you need those, build a more specialized pattern on top of this one.
 
 ## Summary
@@ -199,4 +203,3 @@ This pattern shows a minimal and practical approach to delayed self-messages in 
 - verify the version when the message arrives
 
 - ignore stale messages safely
-

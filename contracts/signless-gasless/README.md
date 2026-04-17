@@ -16,23 +16,24 @@ The session mechanism in this project provides an **authorization layer**: a des
 
 ### Roles
 
-- **Original account**  
-  The account on whose behalf an operation is executed (the “real” user).
+- **Resolved account**  
+  The account returned by `get_original_address(...)` and used by business logic for authorization/accounting.
 
-- **Session key (delegate)**  
-  The account that is allowed to submit messages on behalf of the original account, restricted by:
-  - expiration,
-  - an allowlist of permitted actions.
+- **Immediate caller**  
+  The current `msg::source()`, that is, the actor submitting the message right now.
+
+- **Stored session key**  
+  The delegate recorded inside `SessionData.key`. Validation checks that `SessionData.key == msg::source()` for delegated calls.
 
 ### `session_for_account` parameter
 
 Business methods that support sessions accept:
 
 - `None`  
-  The call is treated as a normal call. The original account equals `msg::source()`.
+  The call is treated as a normal call and resolves to `msg::source()`.
 
 - `Some(account)`  
-  The call is treated as delegated. The program verifies the session for `account` and resolves the original account accordingly.
+  The call is treated as delegated. The program loads the session stored under `account`, validates it, and if successful returns that same `account` as the resolved address.
 
 ### Allowed actions (allowlist)
 
@@ -79,7 +80,7 @@ If `session_for_account` is `Some(account)`, validation includes:
 - a session exists for `account`
 - the session is not expired
 - `allowed_actions` contains the requested action
-- `session.key == msg::source()` (the caller is the approved session key)
+- `session.key == msg::source()` (the caller matches the stored delegate)
 
 If all checks pass, `account` is returned as the resolved original address.
 
@@ -91,26 +92,28 @@ The session service supports two creation modes that differ by **who submits the
 
 ### 1) Signature-based creation
 
-**Use case:** the original account authorizes a delegate off-chain; the delegate (or relayer) submits the on-chain `create_session` call.
+**Use case:** one account signs an off-chain authorization, and the on-chain caller submits `create_session(...)` using that signature.
 
-**High-level behavior:**
+**Important nuance for this example:** the implementation stores the session under `signature_data.key`, and the signed payload authorizes the current `msg::source()` to become the stored delegate for that account.
 
-- the transaction sender (`msg::source()`) becomes the **session key** (delegate)
-- the session is created **for** the account specified by `signature_data.key`
-- a signature is verified against a message constructed by the contract
+That means the signature-based test in this repository behaves as follows:
 
-**Why this is useful:** it enables “signless” UX, where the original account does not need to submit the on-chain transaction itself.
+- `signature_data.key` is the account under which the session is stored,
+- the signed message contains `msg::source()` as the approved delegate,
+- after creation, delegated business calls pass `Some(signature_data.key)`.
 
-**Implementation note:** the signed message must match the contract’s expected format (including the `<Bytes>...</Bytes>` wrapper). If the signed bytes differ, verification fails.
+This is slightly less intuitive than the no-signature flow, so it is worth reading together with [`tests/gtest.rs`](./tests/gtest.rs) if you plan to adapt it.
+
+**Implementation note:** the signed message must match the contract’s expected format exactly, including the `<Bytes>...</Bytes>` wrapper. If the bytes differ, verification fails.
 
 ### 2) No-signature creation
 
-**Use case:** the original account directly creates the session on-chain and appoints a delegate.
+**Use case:** the account that wants to be represented on-chain directly creates the session and appoints a delegate.
 
 **High-level behavior:**
 
-- the transaction sender (`msg::source()`) is the **original account**
-- `signature_data.key` is treated as the **session key** (delegate)
+- the transaction sender (`msg::source()`) becomes the account under which the session is stored
+- `signature_data.key` becomes the stored delegate (`SessionData.key`)
 - no signature verification is performed
 
 This mode is suitable when the user can call `create_session` directly (e.g., standard wallet flow).
@@ -136,7 +139,7 @@ To support delegated calls, a business method should:
 
 - accept `session_for_account: Option<ActorId>`
 - call `get_original_address(...)` using the action being executed
-- use the returned original address for authorization/accounting
+- use the returned address for authorization/accounting instead of assuming `msg::source()` is the business owner
 
 ### Deletion
 
@@ -161,10 +164,12 @@ This is the mechanism that prevents a session key from calling unrelated privile
 
 ## Testing
 
-This project typically includes two primary integration tests:
+This project includes two important integration tests:
 
-- **Signature-based session creation**: `create_session(..., Some(signature))` followed by a delegated call.
-- **No-signature session creation**: `create_session(..., None)` followed by a delegated call where `msg::source()` is the session key.
+- **Signature-based creation**: demonstrates the exact semantics implemented by the current macro-backed service.
+- **No-signature creation**: demonstrates the more direct "account appoints delegate" flow.
+
+If you are integrating this pattern into a real product, treat these tests as the source of truth for role mapping.
 
 ---
 

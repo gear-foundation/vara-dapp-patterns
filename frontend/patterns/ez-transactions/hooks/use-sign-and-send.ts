@@ -70,7 +70,7 @@ export const useSignAndSend = () => {
 
     // The estimated gas is encoded as the third argument of the extrinsic.
     // This value was set by `calculateGas()` during transaction preparation.
-    const calculatedGas = Number(transaction.extrinsic.args[2].toString());
+    const calculatedGas = BigInt(transaction.extrinsic.args[2].toString());
 
     checkBalance(
       calculatedGas,
